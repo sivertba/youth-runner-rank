@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 2,
+  "licensePolicy": "The corpus is research input for a private, derived aggregate model. Raw athlete records are never committed and never published. Only the aggregate model in src/model/generated.json ships.",
+  "exactDobRequired": true,
+  "preferredSeasons": [2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026],
+  "requiredColumns": ["event_id", "sex", "birth_date", "race_date", "seconds", "surface", "timing_method"],
+  "optionalColumns": ["athlete_id", "country", "level", "season_year", "wind", "remark", "place"],
+  "note": "World Athletics publishes an exact date of birth on calendar result rows, which is what makes an age-to-the-day fit possible at all. Age groups or birth years are not sufficient and are never approximated.",
+  "sources": [
+    {
+      "name": "World Athletics calendar competition results",
+      "status": "primary",
+      "access": "GraphQL calendar endpoint, requires WORLD_ATHLETICS_GRAPHQL_KEY in the environment",
+      "dobPrecision": "exact date of birth on most rows",
+      "fitExactDob": true,
+      "tiers": {
+        "populationFit": ["national", "regional", "permit", "meet"],
+        "heldOutValidation": ["international"]
+      },
+      "coverage": "2016-03 onward; 7,759 competitions enumerated, 157,145 flat-distance youth rows, 152 federations, DOB fill rate 44-100% by federation",
+      "knownGaps": [
+        "The endpoint returns no road-race or cross-country results at all; every cross-country and marathon competition in the calendar comes back with zero events.",
+        "Some large meets publish only a subset of events through this endpoint, for example the Millrose Games returns three field events and no running events.",
+        "Race-level dates are frequently absent, so the competition start date is used; heats and finals are indistinguishable in the payload.",
+        "Hand timing is only flagged explicitly when it is electronic, so the corpus is effectively electronic-timing only."
+      ]
+    },
+    {
+      "name": "OpenTrack",
+      "status": "investigated-rejected",
+      "dobPrecision": "age class only, no date of birth",
+      "fitExactDob": false,
+      "note": "Hosts results for the Nordic federations including under-13 school and age-group meets. Publishes an Aldersklass column, never a date, so it cannot support an age-to-the-day fit at any age."
+    },
+    {
+      "name": "ATHMIN (Austria OLV, German school athletics)",
+      "status": "investigated-rejected",
+      "dobPrecision": "year of birth only (Jahrgang), including U10 and U12 classes",
+      "fitExactDob": false,
+      "note": "Has the only under-13 competition records found, but a year of birth is a 365-day uncertainty. Folding it into a day-level curve would corrupt the product's central claim, so it is excluded and those ages fall back to the published benchmark instead."
+    },
+    { "name": "Norwegian Athletics Federation statistics", "status": "candidate", "dobPrecision": "usually birth year", "fitExactDob": false },
+    { "name": "European Athletics historical lists", "status": "validation", "dobPrecision": "mixed", "fitExactDob": false }
+  ]
+}

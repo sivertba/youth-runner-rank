@@ -1,0 +1,29 @@
+{
+  "name": "youthrunnerrank",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:model": "python3 scripts/test_generate_model.py",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit && python3 -m py_compile scripts/generate_model.py scripts/fetch_world_athletics.py && python3 scripts/fetch_world_athletics.py --selftest",
+    "model:build": "python3 scripts/generate_model.py",
+    "model:fetch": "python3 scripts/fetch_world_athletics.py --enumerate && python3 scripts/fetch_world_athletics.py --crawl --workers 12",
+    "model:report": "python3 scripts/fetch_world_athletics.py --report",
+    "check": "npm run lint && npm run test:model && npm run test && npm run build"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1"
+  },
+  "dependencies": {
+    "@fontsource/barlow-condensed": "^5.3.0",
+    "@fontsource/dm-sans": "^5.3.0"
+  }
+}
