@@ -107,7 +107,16 @@ input:focus, select:focus { border-color: #6a4fe3; box-shadow: 0 0 0 3px rgba(10
 .conditions-note { align-self: end; color: #818795; font-size: 11px; line-height: 1.5; }
 .submit-button { width: 100%; min-height: 57px; display: flex; justify-content: center; align-items: center; gap: 20px; border: 0; border-radius: 2px; color: var(--navy); background: var(--lime); font-weight: 800; text-transform: uppercase; font-size: 13px; cursor: pointer; }
 .submit-button:hover { background: #c9f238; }
+.submit-button:disabled { background: #d8d8d8; color: #888; cursor: not-allowed; }
 .form-error { margin-bottom: 16px; padding: 12px 14px; color: #8a2518; background: #ffe6e1; font-size: 13px; }
+
+.result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.copy-button { min-height: 36px; padding: 0 16px; border: 1px solid #3a4560; border-radius: 2px; color: var(--lime); background: transparent; font-weight: 700; font-size: 11px; text-transform: uppercase; cursor: pointer; transition: background .15s, color .15s; }
+.copy-button:hover { background: var(--lime); color: var(--navy); }
+.copy-button.copied { background: var(--lime); color: var(--navy); border-color: var(--lime); }
+
+.toast { position: fixed; bottom: 24px; right: 24px; z-index: 100; padding: 12px 20px; border-radius: 2px; background: var(--navy); color: white; font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(16,23,42,.3); transform: translateY(100px); opacity: 0; transition: transform .25s, opacity .25s; }
+.toast.show { transform: translateY(0); opacity: 1; }
 
 .result-panel { padding: 48px 40px; color: white; background: var(--navy); }
 .result-kicker { color: var(--lime); font-size: 11px; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }

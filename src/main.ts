@@ -13,6 +13,59 @@ import { evaluateBaseline, evaluateGrid } from './model/evaluate'
 import { BASELINE_MAX_AGE_DAYS, BASELINE_MIN_AGE_DAYS, baselineEvent, eventAvailability, findCohort, generatedData, observedAgeRange, overallAgeRange, surfacesFor } from './model'
 import type { Confidence, EvaluationInput, EvaluationResult, Sex, Surface, TimingMethod } from './model/types'
 
+const STORAGE_KEY = 'fairlap-form'
+const URL_PARAMS = ['sex', 'birthDate', 'raceDate', 'event', 'surface', 'minutes', 'seconds', 'timing', 'wind'] as const
+type UrlParam = typeof URL_PARAMS[number]
+
+function getUrlParams(): Partial<Record<UrlParam, string>> {
+  const params = new URLSearchParams(window.location.search)
+  const result: Partial<Record<UrlParam, string>> = {}
+  for (const key of URL_PARAMS) {
+    const value = params.get(key)
+    if (value !== null) result[key] = value
+  }
+  return result
+}
+
+function setUrlParams(params: Partial<Record<UrlParam, string>>): void {
+  const url = new URL(window.location.href)
+  for (const key of URL_PARAMS) {
+    if (params[key]) url.searchParams.set(key, params[key])
+    else url.searchParams.delete(key)
+  }
+  window.history.replaceState({}, '', url)
+}
+
+function loadFormState(): Partial<Record<UrlParam, string>> {
+  const urlParams = getUrlParams()
+  const stored = localStorage.getItem(STORAGE_KEY)
+  const storedParams = stored ? JSON.parse(stored) : {}
+  return { ...storedParams, ...urlParams }
+}
+
+function saveFormState(params: Partial<Record<UrlParam, string>>): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(params))
+  setUrlParams(params)
+}
+
+function copyToClipboard(text: string): Promise<void> {
+  return navigator.clipboard.writeText(text)
+}
+
+function showToast(message: string): void {
+  const existing = document.querySelector('.toast')
+  if (existing) existing.remove()
+  const toast = document.createElement('div')
+  toast.className = 'toast'
+  toast.textContent = message
+  document.body.appendChild(toast)
+  requestAnimationFrame(() => toast.classList.add('show'))
+  setTimeout(() => {
+    toast.classList.remove('show')
+    setTimeout(() => toast.remove(), 200)
+  }, 2500)
+}
+
 const surfaceLabels: Record<Surface, string> = {
   'outdoor-track': 'Outdoor track',
   'indoor-track': 'Indoor track',
@@ -329,7 +382,10 @@ function renderResult(result: EvaluationResult, eventName: string): void {
     }
   }
   resultPanel.innerHTML = `
-    <div class="result-kicker">Your estimated result</div>
+    <div class="result-header">
+      <div class="result-kicker">Your estimated result</div>
+      <button class="copy-button" type="button" aria-label="Copy result to clipboard">Copy</button>
+    </div>
     <div class="result-rank"><strong>${percentile}<sup>th</sup></strong><span>percentile</span></div>
     <p class="result-summary">Faster than approximately <strong>${percentile}%</strong> of comparable recorded performances at this age.</p>
     <div class="result-gauge" style="--position: ${marker}%">
@@ -352,6 +408,34 @@ function renderResult(result: EvaluationResult, eventName: string): void {
     <p class="result-warning"><b>!</b> This is an estimate, not an official ranking. Biological maturity, tactics, terrain and course accuracy are not accounted for.</p>
   `
   resultPanel.scrollIntoView({ behavior: 'smooth', block: 'center' })
+
+  const copyButton = resultPanel.querySelector<HTMLButtonElement>('.copy-button')!
+  copyButton.addEventListener('click', async () => {
+    const res = lastResult
+    const evName = lastEventName
+    const fs = lastFinishSeconds
+    if (!res || !evName) return
+    const text = `FairLap result: ${Math.round(res.percentile)}th percentile in ${evName} (${surfaceLabels[surfaceInput.value as Surface]})
+Time: ${formatTime(fs)}s
+Typical (50th): ${formatTime(res.median)}s
+Fast 10% (90th): ${formatTime(res.targets[90])}s
+Pace: ${formatPace(res.paceSecondsPerKm)}
+Range: ${Math.round(res.percentileLow)}th–${Math.round(res.percentileHigh)}th percentile
+Confidence: ${confidenceLabel(res.confidence)}
+${notes.join('. ')}
+${caveats.join('. ')}`
+    try {
+      await copyToClipboard(text)
+      copyButton.textContent = 'Copied!'
+      copyButton.classList.add('copied')
+      setTimeout(() => {
+        copyButton.textContent = 'Copy'
+        copyButton.classList.remove('copied')
+      }, 2000)
+    } catch {
+      showToast('Failed to copy')
+    }
+  })
 }
 
 sexInput.addEventListener('change', () => refreshOptions())
@@ -377,13 +461,21 @@ const coverageSummary = document.querySelector<HTMLElement>('#coverage-summary')
 if (coverageNote) coverageNote.textContent = coverageText
 if (coverageSummary) coverageSummary.textContent = coverageText
 
+let lastFinishSeconds = 0
+let lastEventName = ''
+let lastResult: EvaluationResult | null = null
+
 form.addEventListener('submit', (event) => {
   event.preventDefault()
   errorBox.hidden = true
+  const submitButton = form.querySelector<HTMLButtonElement>('.submit-button')!
+  submitButton.disabled = true
+  submitButton.textContent = 'Calculating…'
   try {
     const selectedEvent = currentEvent()
     if (!selectedEvent) throw new Error('No event is available for the selected gender.')
     const finishSeconds = Number(minutesInput.value) * 60 + Number(secondsInput.value)
+    lastFinishSeconds = finishSeconds
     const wind = selectedEvent.windAdjusted && windInput.value !== '' ? Number(windInput.value) : null
     const input: EvaluationInput = {
       birthDate: birthInput.value,
@@ -406,9 +498,43 @@ form.addEventListener('submit', (event) => {
       if (!model) throw new Error('No model is available for this combination.')
       result = evaluateBaseline(model, input, selectedEvent.distance, selectedEvent.windAdjusted, 'low')
     }
+    lastEventName = selectedEvent.name
+    lastResult = result
     renderResult(result, selectedEvent.name)
+
+    const formState: Partial<Record<UrlParam, string>> = {
+      sex: sexInput.value,
+      birthDate: birthInput.value,
+      raceDate: raceInput.value,
+      event: eventInput.value,
+      surface: surfaceInput.value,
+      minutes: minutesInput.value,
+      seconds: secondsInput.value,
+      timing: timingInput.value,
+      wind: windInput.value,
+    }
+    saveFormState(formState)
   } catch (error) {
     errorBox.textContent = error instanceof Error ? error.message : 'Check the entered details and try again.'
     errorBox.hidden = false
+  } finally {
+    submitButton.disabled = false
+    submitButton.innerHTML = 'Calculate my result <span aria-hidden="true">↗</span>'
   }
 })
+
+const savedState = loadFormState()
+if (Object.keys(savedState).length > 0) {
+  if (savedState.sex) sexInput.value = savedState.sex
+  if (savedState.birthDate) birthInput.value = savedState.birthDate
+  if (savedState.raceDate) raceInput.value = savedState.raceDate
+  if (savedState.event) eventInput.value = savedState.event
+  if (savedState.surface) surfaceInput.value = savedState.surface
+  if (savedState.minutes) minutesInput.value = savedState.minutes
+  if (savedState.seconds) secondsInput.value = savedState.seconds
+  if (savedState.timing) timingInput.value = savedState.timing
+  if (savedState.wind) windInput.value = savedState.wind
+  refreshOptions(savedState.event)
+  updateAge()
+}
+
