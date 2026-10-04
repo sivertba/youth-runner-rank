@@ -105,9 +105,11 @@ input:focus, select:focus { border-color: #6a4fe3; box-shadow: 0 0 0 3px rgba(10
 .conditions small { color: #999eaa; }
 .conditions .field-grid { margin-top: 22px; }
 .conditions-note { align-self: end; color: #818795; font-size: 11px; line-height: 1.5; }
-.submit-button { width: 100%; min-height: 57px; display: flex; justify-content: center; align-items: center; gap: 20px; border: 0; border-radius: 2px; color: var(--navy); background: var(--lime); font-weight: 800; text-transform: uppercase; font-size: 13px; cursor: pointer; }
+.submit-button { width: 100%; min-height: 57px; display: flex; justify-content: center; align-items: center; gap: 20px; border: 0; border-radius: 2px; color: var(--navy); background: var(--lime); font-weight: 800; text-transform: uppercase; font-size: 13px; cursor: pointer; transition: background .15s; }
 .submit-button:hover { background: #c9f238; }
 .submit-button:disabled { background: #d8d8d8; color: #888; cursor: not-allowed; }
+form.dirty .submit-button { background: var(--orange); color: white; }
+form.dirty .submit-button:hover { background: #e85538; }
 .form-error { margin-bottom: 16px; padding: 12px 14px; color: #8a2518; background: #ffe6e1; font-size: 13px; }
 
 .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }

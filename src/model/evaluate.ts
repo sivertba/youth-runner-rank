@@ -92,7 +92,7 @@ function assemble(
       75: median * Math.exp(sigma * normalInverse(0.25)),
       90: fastBoundary,
     },
-    paceSecondsPerKm: 1000 / (adjustedSeconds / distance),
+    paceSecondsPerKm: adjustedSeconds * 1000 / distance,
     speedMetersPerSecond: distance / adjustedSeconds,
     adjustedSeconds,
     ageDays,

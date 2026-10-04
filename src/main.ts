@@ -464,11 +464,38 @@ if (coverageSummary) coverageSummary.textContent = coverageText
 let lastFinishSeconds = 0
 let lastEventName = ''
 let lastResult: EvaluationResult | null = null
+let lastSubmittedState: string | null = null
+
+function getFormState(): string {
+  return JSON.stringify({
+    sex: sexInput.value,
+    birthDate: birthInput.value,
+    raceDate: raceInput.value,
+    event: eventInput.value,
+    surface: surfaceInput.value,
+    minutes: minutesInput.value,
+    seconds: secondsInput.value,
+    timing: timingInput.value,
+    wind: windInput.value,
+  })
+}
+
+function updateDirtyIndicator(): void {
+  const currentState = getFormState()
+  const isDirty = lastSubmittedState !== null && currentState !== lastSubmittedState
+  form.classList.toggle('dirty', isDirty)
+  submitButton.textContent = isDirty ? 'Recalculate' : 'Calculate my result'
+}
+
+const submitButton = form.querySelector<HTMLButtonElement>('.submit-button')!
+;[sexInput, birthInput, raceInput, eventInput, surfaceInput, minutesInput, secondsInput, timingInput, windInput].forEach((input) => {
+  input.addEventListener('input', updateDirtyIndicator)
+  input.addEventListener('change', updateDirtyIndicator)
+})
 
 form.addEventListener('submit', (event) => {
   event.preventDefault()
   errorBox.hidden = true
-  const submitButton = form.querySelector<HTMLButtonElement>('.submit-button')!
   submitButton.disabled = true
   submitButton.textContent = 'Calculating…'
   try {
@@ -500,7 +527,9 @@ form.addEventListener('submit', (event) => {
     }
     lastEventName = selectedEvent.name
     lastResult = result
+    lastSubmittedState = getFormState()
     renderResult(result, selectedEvent.name)
+    updateDirtyIndicator()
 
     const formState: Partial<Record<UrlParam, string>> = {
       sex: sexInput.value,
