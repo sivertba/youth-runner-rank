@@ -81,8 +81,10 @@ function formatTime(seconds: number): string {
 }
 
 function formatPace(secondsPerKm: number): string {
-  const rounded = Math.round(secondsPerKm)
-  return `${Math.floor(rounded / 60)}:${String(rounded % 60).padStart(2, '0')} /km`
+  const safe = Math.max(0, secondsPerKm)
+  const minutes = Math.floor(safe / 60)
+  const remaining = Math.round((safe - minutes * 60) * 100) / 100
+  return `${minutes}:${remaining.toFixed(2).padStart(5, '0')} /km`
 }
 
 function resultLabel(percentile: number): string {
